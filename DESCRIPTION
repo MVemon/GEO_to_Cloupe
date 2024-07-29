@@ -1,4 +1,4 @@
-Package: GEO_to_Cloupe
+Package: GEOtoCloupe
 Type: Package
 Title: GEO Database scRNA 10X Downloader and Converter to Cloupe File
 Version: 1.0
