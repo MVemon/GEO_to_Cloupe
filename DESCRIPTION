@@ -1,0 +1,6 @@
+Package: GEO_Cloupe_Converter
+Type: Package
+Title: GEO Database scRNA 10X Downloader and Converter to Cloupe File
+Version: 1.0
+RoxygenNote: 7.3.1
+Encoding: UTF-8
