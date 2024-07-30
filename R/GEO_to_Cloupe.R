@@ -115,6 +115,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format){
     Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30)
     
     Seurat_merged_joined <- JoinLayers(Seurat_merged)
+
+    dir.create("CloupeFiles")
     
     create_loupe_from_seurat(
       Seurat_merged_joined,
