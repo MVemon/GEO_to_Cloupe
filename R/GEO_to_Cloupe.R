@@ -17,6 +17,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format){
   library(loupeR)
   
   options(timeout = max(300, getOption("timeout")))
+
+  Seurat_merged_list <- c()
   
   for (GEO_ID in GEO_ID_List){
     gse <- getGEO(GEO_ID, GSEMatrix = TRUE)
@@ -125,6 +127,9 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format){
       dedup_clusters = FALSE,
       executable_path = NULL,
       force = TRUE)
+    
+    Seurat_merged_list <- append(Seurat_merged_list, assign(paste0(GEO_accession, "_merged"), Seurat_merged))
+
   }
   
   return(Seurat_merged_joined)
