@@ -26,9 +26,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format){
     GEO_accession_list <- c()
     
     for(i in 1: length(gse)){
-      print(i)
       for (n in 1: length(gse[[i]]@phenoData@data[["geo_accession"]])){
-        print(n)
+        print(paste0(n, "/", length(gse[[i]]@phenoData@data[["geo_accession"]])))
         if (grepl(File_Format,getGEOSuppFiles(gse[[i]]@phenoData@data[["geo_accession"]][n], fetch_files = FALSE)[1])){
           GEO_accession_list <- append(GEO_accession_list, gse[[i]]@phenoData@data[["geo_accession"]][n])
         }
@@ -132,6 +131,6 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format){
 
   }
   
-  return(Seurat_merged_joined)
+  return(Seurat_merged_list)
 }
 
