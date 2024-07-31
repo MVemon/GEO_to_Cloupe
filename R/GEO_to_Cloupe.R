@@ -153,7 +153,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         Seurat_separate_list <- append(Seurat_separate_list, assign(paste0(GEO_accession), Seurat_Object))
         
-        dir.create("CloupeFiles")
+        dir.create("CloupeFiles", showWarnings = FALSE)
         
         create_loupe_from_seurat(
           Seurat_Object,
@@ -192,7 +192,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30, reduction = "integrated.cca")
         
-        dir.create("CloupeFiles")
+        dir.create("CloupeFiles", showWarnings = FALSE)
         
         create_loupe_from_seurat(
           Seurat_merged,
@@ -214,7 +214,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         Seurat_merged <- JoinLayers(Seurat_merged)
         
-        dir.create("CloupeFiles")
+        dir.create("CloupeFiles", showWarnings = FALSE)
         
         create_loupe_from_seurat(
           Seurat_merged,
