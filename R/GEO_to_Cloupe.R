@@ -26,18 +26,41 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
   
   Seurat_separate_list <- c()
   
+  
   for (GEO_ID in GEO_ID_List){
+    
+    Empty_samples <- FALSE
+    
     gse <- getGEO(GEO_ID, GSEMatrix = TRUE)
     
     GEO_accession_list <- c()
     
-    for(i in 1: length(gse)){
-      for (n in 1: length(gse[[i]]@phenoData@data[["geo_accession"]])){
-        print(paste0(n, "/", length(gse[[i]]@phenoData@data[["geo_accession"]])))
-        if (grepl(File_Format,getGEOSuppFiles(gse[[i]]@phenoData@data[["geo_accession"]][n], fetch_files = FALSE)[1])){
-          GEO_accession_list <- append(GEO_accession_list, gse[[i]]@phenoData@data[["geo_accession"]][n])
+    if(grepl("GSE", getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname)[1] && !grepl(".tar", getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname)[1]){
+      
+      Empty_samples = TRUE
+      
+    }
+    
+    else{
+      
+      for(i in 1: length(gse)){
+        for (n in 1: length(gse[[i]]@phenoData@data[["geo_accession"]])){
+          
+          print(paste0(n, "/", length(gse[[i]]@phenoData@data[["geo_accession"]])))
+          
+          if (grepl(File_Format,getGEOSuppFiles(gse[[i]]@phenoData@data[["geo_accession"]][n], fetch_files = FALSE)[1])){
+            GEO_accession_list <- append(GEO_accession_list, gse[[i]]@phenoData@data[["geo_accession"]][n])
+          }
+          
         }
       }
+      
+    }
+    
+    
+    if (Empty_samples){
+      
+      GEO_accession_list <- append(GEO_accession_list, GEO_ID)
     }
     
     Seurat_list <- c()
@@ -55,6 +78,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         fileNames = row.names(filePaths) 
       }
+      
+      symbol <- str_sub(fileNames)
       
       fixedNames <- str_split_i(fileNames, "_", -1)
       
@@ -77,7 +102,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
             
             mtx_file_name <-  mtx_name
             
-            prefixNames <- str_split_i(mtx_file_name, "_matrix.mtx.gz", 1)
+            prefixNames <- str_split_i(mtx_file_name, "matrix.mtx.gz", 1)
             
             prefixNames <- str_split_i(prefixNames, "/", -1)
             
@@ -87,6 +112,24 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         }
         
         fixedNames <- sub(pattern = "genes.tsv.gz", replacement = "features.tsv.gz", x = fixedNames)
+        
+        for (x in 1:length(fixedNames)){
+          
+          if (grepl(("matrix"), fixedNames[x])){
+            fixedNames[x] <- "matrix.mtx.gz"
+          }
+          
+          else if (grepl(("barcodes"), fixedNames[x])){
+            fixedNames[x] <- "barcodes.tsv.gz"
+            
+          }
+          
+          else if (grepl(("features"), fixedNames[x])){
+            fixedNames[x] <- "features.tsv.gz"
+          }
+          
+        }
+        
         
         file.rename(fileNames, paste0(GEO_accession, "/", fixedNames))
         
@@ -162,6 +205,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
           dedup_clusters = FALSE,
           executable_path = NULL,
           force = TRUE)
+        
       }
       
     }
