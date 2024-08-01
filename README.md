@@ -16,7 +16,7 @@ intall_github("marck1198/GEO_to_Cloupe")
 
 `GEO_to_Cloupe()` function is used to directly download scRNA files from GEO databases and automatically converts them into cloupe files, which can be read through the 10X loupe browser. Can convert MTX and H5 files.
 
-
+General pipeline involves converting the MTX and H5 scRNA files into Seurat object, followed by normalization and clustering, then lastly converted into a cloupe.
 
 **Inputs/Parameters**
 
@@ -29,3 +29,5 @@ Downloaded: (default FALSE) Allows for processing scRNA files into cloupe if the
 Integrate: (default FALSE) Toggles whether you want to utilize Seurat's integrate function while merging multiple files together. This is a time consuming process that may or may not improve clustering.
 
 Resolution: (default 0.5) Sets the sensitivity for clustering the scRNA UMAPs. Values between 0.0 to 1.0, with lower values indicating lower sensitivity (less number of clusters created, larger cluster sizes).
+
+Merge: (default TRUE) Controls whether the different scRNA files are to be merged together and outputed as a single cloupe file, or create separate cloupe files for each dataset.
