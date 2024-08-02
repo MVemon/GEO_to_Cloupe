@@ -29,19 +29,34 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
   
   for (GEO_ID in GEO_ID_List){
     
-    Empty_samples <- FALSE
+    Empty_samples <- TRUE
     
     gse <- getGEO(GEO_ID, GSEMatrix = TRUE)
     
     GEO_accession_list <- c()
     
-    if(grepl("GSE", getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname)[1] && !grepl(".tar", getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname)[1]){
+    checkSamplesList <- getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname
+    
+    for (suppFile in checkSamplesList){
+
+      if(grepl("GSE", suppFile) && grepl(".tar", suppFile)){
+        
+        Empty_samples = FALSE
+        
+      }
       
-      Empty_samples = TRUE
+      # else if(grepl("GSE", suppFile) && !grepl(".tar", suppFile)){
+      #   
+      #   print("Test")
+      #   
+      #   Empty_samples = TRUE
+      #   
+      # }
       
     }
+
     
-    else{
+    if (!Empty_samples){
       
       for(i in 1: length(gse)){
         for (n in 1: length(gse[[i]]@phenoData@data[["geo_accession"]])){
@@ -58,7 +73,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
     }
     
     
-    if (Empty_samples){
+    else if (Empty_samples){
       
       GEO_accession_list <- append(GEO_accession_list, GEO_ID)
     }
@@ -146,14 +161,29 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
       else if ((File_Format == "h5")){
         
         for(h5_name in fileNames){
+          if (length(fileNames) == 1){
+            h5_file_name <-  h5_name
+            
+            prefixNames <- str_split_i(h5_file_name, ".h5", -1)
+            
+          }
           
-          if (grepl("filtered_feature_bc_matrix.h5", h5_name)){
+          else if (grepl("filtered_feature_bc_matrix.h5", h5_name)){
             
             h5_file_name <-  h5_name
             
-            prefixNames <- str_split_i(h5_file_name, "_filtered_feature", 1)
+            prefixNames <- str_split_i(h5_file_name, "filtered_feature", 1)
             prefixNames <- str_split_i(prefixNames, "/", -1)
               
+          }
+          
+          else if (grepl(".h5", h5_name)){
+            
+            h5_file_name <-  h5_name
+            
+            prefixNames <- str_split_i(h5_file_name, ".h5", -1)
+            
+            
           }
  
         }
@@ -162,6 +192,13 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
       }
       
+      # else if ((File_Format == "csv")){
+      #   
+      #   Seurat_Object <- read.csv(file = fileNames, header = TRUE, row.names = 1)
+      #   Seurat_Object <- t(Seurat_Object)
+      #   
+      # }
+      # 
       
       Seurat_Object <- CreateSeuratObject(counts = Seurat_Object, project = GEO_ID, min.features = 200)
       
@@ -286,8 +323,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
   
   else {
     return(Seurat_separate_list)
+    
   }
   
   
 }
-
