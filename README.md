@@ -7,7 +7,7 @@ Downloading directly through github
 ```
 library(devtools)
 
-intall_github("marck1198/GEO_to_Cloupe")
+install_github("marck1198/GEO_to_Cloupe")
 ```
 
 
