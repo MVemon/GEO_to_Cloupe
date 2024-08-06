@@ -13,7 +13,7 @@
 #' merged_Suerat <- GEO_to_Cloupe(c("GSE108677", "GSE128033"), "mtx.gz" );
 #' @export
 
-GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.5, Merge = TRUE){
+GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.5, Merge = TRUE){
   
   library(GEOquery)
   library(stringr)
@@ -46,6 +46,33 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
       }
       
     }
+    
+    if (!Empty_samples){
+      
+      file_type_check = getGEOSuppFiles(gse[[1]]@phenoData@data[["geo_accession"]][1], fetch_files = FALSE)$fname
+      
+      for(z in file_type_check){
+        if(grepl("mtx.gz", z)){
+          File_Format = "mtx.gz"
+        } else if (grepl(".h5", z)){
+          File_Format = "h5"
+        }
+      }
+      
+      
+    } else if (Empty_samples){
+      file_type_check = getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname
+      
+      for(z in file_type_check){
+        if(grepl("mtx.gz", z)){
+          File_Format = "mtx.gz"
+        } else if (grepl(".h5", z)){
+          File_Format = "h5"
+        }
+      }
+      
+    }
+    
 
     if (!Empty_samples){
       
@@ -71,7 +98,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
     
     for(GEO_accession in GEO_accession_list){
       
-      print(paste0("Downloading files from ",GEO_accession))
+      print(paste0("Accessing files from ",GEO_accession))
       
       if (Downloaded) {
         
@@ -84,8 +111,6 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         fileNames = row.names(filePaths) 
       }
       
-      symbol <- str_sub(fileNames)
-      
       fixedNames <- str_split_i(fileNames, "_", -1)
       
       premetaNames <- str_split_i(fileNames[1], "/",-1)
@@ -95,7 +120,6 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
       metaNames <- metaNames[[1]]
       
       metaNames_filtered <- metaNames[0:(length(metaNames)-1)]
-      
       
       if (File_Format == "mtx.gz"){
         
@@ -135,6 +159,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         file.rename(fileNames, paste0(GEO_accession, "/", fixedNames))
         
+        print(paste0("Creating Seurat Object for ", GEO_accession))
+        
         Seurat_Object <- Read10X(
           GEO_accession,
           gene.column = 2,
@@ -171,6 +197,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
           }
  
         }
+        
+        print(paste0("Creating Seurat Object for ", GEO_accession))
         
         Seurat_Object <- Read10X_h5(h5_file_name, use.names = TRUE)
         
@@ -209,6 +237,9 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
       # }
       
       if (!Merge){
+        
+        print(paste0("Starting processing of ", GEO_accession, " Seurat object"))
+        
         Seurat_Object <- NormalizeData(Seurat_Object, normalization.method = "LogNormalize", scale.factor = 10000)
         
         Seurat_Object <- FindVariableFeatures(Seurat_Object, selection.method = "vst", nfeatures = 2000)
@@ -233,6 +264,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         dir.create("CloupeFiles", showWarnings = FALSE)
         
+        print(paste0("Creating loupe file for ", GEO_accession))
+        
         create_loupe_from_seurat(
           Seurat_Object,
           output_dir = "CloupeFiles",
@@ -246,6 +279,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
     }
     
     if (Merge){
+      
+      print(paste0("Starting merging and processing of ", GEO_ID))
       
       Seurat_merged <- merge(Seurat_Object, y = Seurat_list[1:(length(Seurat_list)-1)], project = GEO_ID)
       
@@ -261,6 +296,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
       
       if (Integrate){
         
+        print("Starting integration")
+        
         Seurat_merged <- IntegrateLayers(object = Seurat_merged, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
         
         Seurat_merged[["RNA"]] <- JoinLayers(Seurat_merged[["RNA"]])
@@ -272,6 +309,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30, reduction = "integrated.cca")
         
         dir.create("CloupeFiles", showWarnings = FALSE)
+        
+        print(paste0("Creating loupe file for ", GEO_ID))
         
         create_loupe_from_seurat(
           Seurat_merged,
@@ -293,6 +332,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         dir.create("CloupeFiles", showWarnings = FALSE)
         
+        print(paste0("Creating loupe file for ", GEO_ID))
+        
         create_loupe_from_seurat(
           Seurat_merged,
           output_dir = "CloupeFiles",
@@ -305,7 +346,6 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
       
       # Seurat_merged_list <- append(Seurat_merged_list, assign(paste0(GEO_accession, "_merged"), Seurat_merged))
       Seurat_merged_list <- append(Seurat_merged_list, Seurat_merged)
-      
       
     }
     
