@@ -212,7 +212,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       # }
       # 
       
-      Seurat_Object <- CreateSeuratObject(counts = Seurat_Object, project = GEO_ID, min.features = 200)
+      Seurat_Object <- CreateSeuratObject(counts = Seurat_Object, project = GEO_ID, min.features = 50)
       
       
       for(i in 1: length(metaNames_filtered)){
