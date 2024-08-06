@@ -5,9 +5,19 @@
 Downloading directly through github
 
 ```
+install.packages("devtools")
 library(devtools)
 
-install_github("marck1198/GEO_to_Cloupe")
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("GEOquery")
+
+install.packages("hdf5r")
+
+remotes::install_github("10xGenomics/loupeR")
+
+install_github("MVemon/GEO_to_Cloupe")
 ```
 
 
@@ -21,8 +31,6 @@ General pipeline involves converting the MTX and H5 scRNA files into Seurat obje
 **Inputs/Parameters**
 
 GEO_ID_List: (Required) Either a single GEO accession number (eg. "GSE123456") or a list of them (eg. c("GSE1111111", "GSE2222222")).
-
-File_Format: (Required) Format of scRNA files you wish to download. Input either "mtx.gz" or "h5".
 
 Downloaded: (default FALSE) Allows for processing scRNA files into cloupe if the files had been previously downloaded. Setting TRUE skips the downloading portion of the code.
 
