@@ -10,7 +10,7 @@
 #' @return Returns a merged Seurat object of all the different scRNA datasets downloaded, while also exporting cloupe files into the directory "CloupeFiles"
 #' @examples 
 #' merged_Seurat <- GEO_to_Cloupe(c("GSE108677"), "h5");
-#' merged_Suerat <- (c("GSE108677", "GSE128033"), "mtx.gz" );
+#' merged_Suerat <- GEO_to_Cloupe(c("GSE108677", "GSE128033"), "mtx.gz" );
 #' @export
 
 GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.5, Merge = TRUE){
@@ -27,7 +27,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
   Seurat_separate_list <- c()
   
   
-  for (GEO_ID in GEO_ID_List){
+  for(GEO_ID in GEO_ID_List){
     
     Empty_samples <- TRUE
     
@@ -45,23 +45,14 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
       }
       
-      # else if(grepl("GSE", suppFile) && !grepl(".tar", suppFile)){
-      #   
-      #   print("Test")
-      #   
-      #   Empty_samples = TRUE
-      #   
-      # }
-      
     }
 
-    
     if (!Empty_samples){
       
       for(i in 1: length(gse)){
         for (n in 1: length(gse[[i]]@phenoData@data[["geo_accession"]])){
           
-          print(paste0(n, "/", length(gse[[i]]@phenoData@data[["geo_accession"]])))
+          print(paste0("Checking Samples ",n, "/", length(gse[[i]]@phenoData@data[["geo_accession"]])))
           
           if (grepl(File_Format,getGEOSuppFiles(gse[[i]]@phenoData@data[["geo_accession"]][n], fetch_files = FALSE)[1])){
             GEO_accession_list <- append(GEO_accession_list, gse[[i]]@phenoData@data[["geo_accession"]][n])
@@ -70,24 +61,23 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         }
       }
       
-    }
-    
-    
-    else if (Empty_samples){
+    } else if (Empty_samples){
       
       GEO_accession_list <- append(GEO_accession_list, GEO_ID)
+      
     }
     
     Seurat_list <- c()
     
     for(GEO_accession in GEO_accession_list){
-      print(GEO_accession)
+      
+      print(paste0("Downloading files from ",GEO_accession))
       
       if (Downloaded) {
-        fileNames = paste0(GEO_accession, "/",getGEOSuppFiles(GEO_accession, fetch_files = FALSE)$fname) #Use this for troubleshooting without having to download files again
-      }
+        
+        fileNames = paste0(GEO_accession, "/",getGEOSuppFiles(GEO_accession, fetch_files = FALSE)$fname)
       
-      else {
+        } else {
         
         filePaths = getGEOSuppFiles(GEO_accession)
         
@@ -101,8 +91,6 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
       premetaNames <- str_split_i(fileNames[1], "/",-1)
       
       metaNames <- str_split(premetaNames, "_")
-      
-      #metaNames <- str_split(metaNames[1], end = -2)
       
       metaNames <- metaNames[[1]]
       
@@ -120,7 +108,6 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
             prefixNames <- str_split_i(mtx_file_name, "matrix.mtx.gz", 1)
             
             prefixNames <- str_split_i(prefixNames, "/", -1)
-            
             
           }
           
@@ -156,28 +143,25 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
           strip.suffix = FALSE
         )
         
-      }
-      
-      else if ((File_Format == "h5")){
+      } else if ((File_Format == "h5")){
         
         for(h5_name in fileNames){
           if (length(fileNames) == 1){
+            
             h5_file_name <-  h5_name
             
-            prefixNames <- str_split_i(h5_file_name, ".h5", -1)
+            prefixNames <- str_split_i(h5_file_name, ".h5", 1)
+            prefixNames <- str_split_i(prefixNames, "/", -1)
             
-          }
-          
-          else if (grepl("filtered_feature_bc_matrix.h5", h5_name)){
+            
+          } else if (grepl("filtered_feature_bc_matrix.h5", h5_name)){
             
             h5_file_name <-  h5_name
             
             prefixNames <- str_split_i(h5_file_name, "filtered_feature", 1)
             prefixNames <- str_split_i(prefixNames, "/", -1)
               
-          }
-          
-          else if (grepl(".h5", h5_name)){
+          } else if (grepl(".h5", h5_name)){
             
             h5_file_name <-  h5_name
             
@@ -210,7 +194,19 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
       }
       
-      Seurat_list <- append(Seurat_list, assign(GEO_accession, Seurat_Object))
+      #Seurat_list <- append(Seurat_list, assign(GEO_accession, Seurat_Object))
+      Seurat_list <- append(Seurat_list, Seurat_Object)
+      
+      
+      # if(!Empty_samples){
+      #   
+      #   rm(list = ls(pattern = "^GSM"))
+      #   
+      # } else if(Empty_samples){
+      #   
+      #   rm(list = ls(pattern = "^GSE"))
+      #   
+      # }
       
       if (!Merge){
         Seurat_Object <- NormalizeData(Seurat_Object, normalization.method = "LogNormalize", scale.factor = 10000)
@@ -231,7 +227,9 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
         Seurat_Object <- JoinLayers(Seurat_Object)
         
-        Seurat_separate_list <- append(Seurat_separate_list, assign(paste0(GEO_accession), Seurat_Object))
+        #Seurat_separate_list <- append(Seurat_separate_list, assign(paste0(GEO_accession), Seurat_Object))
+        Seurat_separate_list <- append(Seurat_separate_list, Seurat_Object)
+        
         
         dir.create("CloupeFiles", showWarnings = FALSE)
         
@@ -283,9 +281,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
           executable_path = NULL,
           force = TRUE)
         
-      }
-      
-      else {
+      } else {
         
         Seurat_merged <- FindNeighbors(Seurat_merged, dims = 1:30)
         
@@ -307,24 +303,22 @@ GEO_to_Cloupe <- function(GEO_ID_List, File_Format, Downloaded = FALSE, Integrat
         
       }
       
-      Seurat_merged_list <- append(Seurat_merged_list, assign(paste0(GEO_accession, "_merged"), Seurat_merged))
+      # Seurat_merged_list <- append(Seurat_merged_list, assign(paste0(GEO_accession, "_merged"), Seurat_merged))
+      Seurat_merged_list <- append(Seurat_merged_list, Seurat_merged)
       
       
     }
     
-
   }
   
   if(Merge){
     
     return(Seurat_merged_list)
 
-  }
-  
-  else {
+  } else {
+    
     return(Seurat_separate_list)
     
   }
-  
   
 }
