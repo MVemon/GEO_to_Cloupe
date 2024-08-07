@@ -2,18 +2,18 @@
 #'
 #' Automatically downloads scRNA files from GEO bases and converts them into cloupe file format
 #' @param GEO_ID_List A list of strings that contain GEO accession codes
-#' @param File_Format A string of the file format ending type. Acceptable formats include "mtx.gz" and "h5"
 #' @param Downloaded A TRUE or FALSE that dictates whether the files have been downloaded prior. Useful for debugging and testing codes without having to re-download files.
 #' @param Integrate A TRUE or FALSE that dictates whether to integrate the different scRNA datasets together
 #' @param Resolution Set the value for UMAP clustering sensitivity from a value of 0.0 to 1.0 from less to more clusters
 #' @param Merge A TRUE or FALSE that dictates whether you want to merge the multiple scRNA data 
+#' @param Mitochondria Set threshold for mitochondria QC metrics. Values set between 0 to 100.
 #' @return Returns a merged Seurat object of all the different scRNA datasets downloaded, while also exporting cloupe files into the directory "CloupeFiles"
 #' @examples 
-#' merged_Seurat <- GEO_to_Cloupe(c("GSE108677"), "h5");
-#' merged_Suerat <- GEO_to_Cloupe(c("GSE108677", "GSE128033"), "mtx.gz" );
+#' merged_Seurat <- GEO_to_Cloupe(c("GSE213338"));
+#' merged_Suerat <- GEO_to_Cloupe(c("GSE213338", "GSE162733"), Downloaded = TRUE, Merge = FALSE);
 #' @export
 
-GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.5, Merge = TRUE){
+GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.5, Merge = TRUE, Mitochondria = 20){
   
   library(GEOquery)
   library(stringr)
@@ -73,6 +73,13 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       
     }
     
+    organism <- gse[[1]]@phenoData@data[["organism_ch1"]][1]
+    
+    if(organism == "Homo sapiens"){
+      mitochondria <- "^MT-"
+    } else if (organism == "Mus musculus"){
+      mitochondria <- "^mt-"
+    }
 
     if (!Empty_samples){
       
@@ -240,6 +247,10 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         print(paste0("Starting processing of ", GEO_accession, " Seurat object"))
         
+        Seurat_Object[["percent.mt"]] <- PercentageFeatureSet(Seurat_Object, pattern = mitochondria)
+        
+        Seurat_Object <- subset(Seurat_Object, subset = percent.mt < Mitochondria)
+        
         Seurat_Object <- NormalizeData(Seurat_Object, normalization.method = "LogNormalize", scale.factor = 10000)
         
         Seurat_Object <- FindVariableFeatures(Seurat_Object, selection.method = "vst", nfeatures = 2000)
@@ -269,7 +280,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         create_loupe_from_seurat(
           Seurat_Object,
           output_dir = "CloupeFiles",
-          output_name = paste0(prefixNames,".",File_Format),
+          output_name = "TEST_MITO",
           dedup_clusters = FALSE,
           executable_path = NULL,
           force = TRUE)
@@ -283,6 +294,10 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       print(paste0("Starting merging and processing of ", GEO_ID))
       
       Seurat_merged <- merge(Seurat_Object, y = Seurat_list[1:(length(Seurat_list)-1)], project = GEO_ID)
+      
+      Seurat_merged[["percent.mt"]] <- PercentageFeatureSet(Seurat_merged, pattern = mitochondria)
+      
+      Seurat_merged <- subset(Seurat_merged, subset = percent.mt < Mitochondria)
       
       Seurat_merged <- NormalizeData(Seurat_merged, normalization.method = "LogNormalize", scale.factor = 10000)
       
