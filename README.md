@@ -27,7 +27,7 @@ install_github("MVemon/GEO_to_Cloupe")
 ```
 library(devtools)
 
-library(GEO_to_Cloupe)
+library(GEOtoCloupe)
 
 Seurat_lists <- GEO_to_Cloupe("GSE210187")
 ```
