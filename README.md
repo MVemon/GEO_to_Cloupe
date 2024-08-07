@@ -39,3 +39,5 @@ Integrate: (default FALSE) Toggles whether you want to utilize Seurat's integrat
 Resolution: (default 0.5) Sets the sensitivity for clustering the scRNA UMAPs. Values between 0.0 to 1.0, with lower values indicating lower sensitivity (less number of clusters created, larger cluster sizes).
 
 Merge: (default TRUE) Controls whether the different scRNA files are to be merged together and outputed as a single cloupe file, or create separate cloupe files for each dataset.
+
+Mitochondria: (default 20) Sets the threshold for mitochondrial QC metrics. From a scale of 0 to 100.
