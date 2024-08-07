@@ -13,15 +13,28 @@
 #' merged_Suerat <- GEO_to_Cloupe(c("GSE213338", "GSE162733"), Downloaded = TRUE, Merge = FALSE);
 #' @export
 
-GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.5, Merge = TRUE, Mitochondria = 20){
+GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.30, Merge = TRUE, Mitochondria = 30){
   
   library(GEOquery)
   library(stringr)
   library(Seurat)
   library(loupeR)
   
-  options(timeout = max(300, getOption("timeout")))
-
+  #parallel = FALSE, parallel_workers = 4, maxSize = 850
+  
+  # if (parallel){
+  #   
+  #   library(future)
+  #   
+  #   plan("multicore", workers = parallel_workers)
+  #   
+  #   options(timeout = max(300, getOption("timeout")))
+  #   
+  #   options(future.globals.maxSize= maxSize*1024^2)
+  #   
+  # }
+ 
+  
   Seurat_merged_list <- c()
   
   Seurat_separate_list <- c()
@@ -118,7 +131,9 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         fileNames = row.names(filePaths) 
       }
       
-      fixedNames <- str_split_i(fileNames, "_", -1)
+      #fixedNames <- str_split_i(fileNames, "_", -1)
+      
+      fixedNames <- str_split_i(fileNames, "/", -1)
       
       premetaNames <- str_split_i(fileNames[1], "/",-1)
       
@@ -130,7 +145,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       
       if (File_Format == "mtx.gz"){
         
-        for(mtx_name in fileNames){
+        for(mtx_name in fixedNames){
           
           if (grepl("mtx.gz", mtx_name)){
             
@@ -144,24 +159,30 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
           
         }
         
-        fixedNames <- sub(pattern = "genes.tsv.gz", replacement = "features.tsv.gz", x = fixedNames)
         
         for (x in 1:length(fixedNames)){
           
-          if (grepl(("matrix"), fixedNames[x])){
+          if (grepl(("matrix"), fileNames[x])){
+            
             fixedNames[x] <- "matrix.mtx.gz"
-          }
-          
-          else if (grepl(("barcodes"), fixedNames[x])){
+            
+          } else if (grepl(("barcodes"), fixedNames[x])){
+            
             fixedNames[x] <- "barcodes.tsv.gz"
+            
+          } else if (grepl(("features"), fixedNames[x])){
+            
+            fixedNames[x] <- "features.tsv.gz"
+            
+          } else if (grepl(("genes"), fixedNames[x])){
+            
+            fixedNames[x] <- "genes.tsv.gz"
             
           }
           
-          else if (grepl(("features"), fixedNames[x])){
-            fixedNames[x] <- "features.tsv.gz"
-          }
-          
         }
+        
+        fixedNames <- sub(pattern = "genes.tsv.gz", replacement = "features.tsv.gz", x = fixedNames)
         
         
         file.rename(fileNames, paste0(GEO_accession, "/", fixedNames))
@@ -335,7 +356,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
           executable_path = NULL,
           force = TRUE)
         
-      } else {
+      } else if (!Integrate){
         
         Seurat_merged <- FindNeighbors(Seurat_merged, dims = 1:30)
         
