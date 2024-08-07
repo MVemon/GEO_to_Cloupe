@@ -13,7 +13,7 @@
 #' merged_Suerat <- GEO_to_Cloupe(c("GSE213338", "GSE162733"), Downloaded = TRUE, Merge = FALSE);
 #' @export
 
-GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.30, Merge = TRUE, Mitochondria = 30){
+GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.10, Merge = TRUE, Mitochondria = 30){
   
   library(GEOquery)
   library(stringr)
