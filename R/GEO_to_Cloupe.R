@@ -287,6 +287,9 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         Seurat_Object <- FindClusters(Seurat_Object, resolution = Resolution)
         
         Seurat_Object <- RunUMAP(Seurat_Object, dims = 1:30)
+
+        Seurat_Object <- RunTSNE(Seurat_Object, dims = 1:30)
+
         
         Seurat_Object <- JoinLayers(Seurat_Object)
         
@@ -343,6 +346,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         Seurat_merged <- FindClusters(Seurat_merged, resolution = Resolution)
         
         Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30, reduction = "integrated.cca")
+
+        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30, reduction = "integrated.cca")
         
         dir.create("CloupeFiles", showWarnings = FALSE)
         
@@ -363,6 +368,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         Seurat_merged <- FindClusters(Seurat_merged, resolution = Resolution)
         
         Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30)
+
+        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30)
         
         Seurat_merged <- JoinLayers(Seurat_merged)
         
