@@ -8,9 +8,9 @@ GEO_to_Cloupe(
   GEO_ID_List,
   Downloaded = FALSE,
   Integrate = FALSE,
-  Resolution = 0.5,
+  Resolution = 0.1,
   Merge = TRUE,
-  Mitochondria = 20
+  Mitochondria = 30
 )
 }
 \arguments{
