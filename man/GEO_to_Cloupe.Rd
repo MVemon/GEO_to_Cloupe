@@ -9,7 +9,8 @@ GEO_to_Cloupe(
   Downloaded = FALSE,
   Integrate = FALSE,
   Resolution = 0.5,
-  Merge = TRUE
+  Merge = TRUE,
+  Mitochondria = 20
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ GEO_to_Cloupe(
 \item{Resolution}{Set the value for UMAP clustering sensitivity from a value of 0.0 to 1.0 from less to more clusters}
 
 \item{Merge}{A TRUE or FALSE that dictates whether you want to merge the multiple scRNA data}
+
+\item{Mitochondria}{Set threshold for mitochondria QC metrics. Values set between 0 to 100.}
 }
 \value{
 Returns a merged Seurat object of all the different scRNA datasets downloaded, while also exporting cloupe files into the directory "CloupeFiles"
