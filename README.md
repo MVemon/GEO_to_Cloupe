@@ -24,6 +24,14 @@ install_github("MVemon/GEO_to_Cloupe")
 
 # Usage
 
+```
+library(devtools)
+
+library(GEO_to_Cloupe)
+
+Seurat_lists <- GEO_to_Cloupe("GSE210187")
+```
+
 `GEO_to_Cloupe()` function is used to directly download scRNA files from GEO databases and automatically converts them into cloupe files, which can be read through the 10X loupe browser. Can convert MTX and H5 files.
 
 General pipeline involves converting the MTX and H5 scRNA files into Seurat object, followed by normalization and clustering, then lastly converted into a cloupe.
