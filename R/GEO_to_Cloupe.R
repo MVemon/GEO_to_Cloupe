@@ -288,7 +288,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         Seurat_Object <- RunUMAP(Seurat_Object, dims = 1:30)
 
-        Seurat_Object <- RunTSNE(Seurat_Object, dims = 1:30)
+        Seurat_Object <- RunTSNE(Seurat_Object, dims = 1:30, check_duplicates = FALSE)
 
         
         Seurat_Object <- JoinLayers(Seurat_Object)
@@ -369,7 +369,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30)
 
-        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30)
+        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30, check_duplicates = FALSE)
         
         Seurat_merged <- JoinLayers(Seurat_merged)
         
