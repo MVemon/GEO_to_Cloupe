@@ -347,7 +347,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30, reduction = "integrated.cca")
 
-        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30, reduction = "integrated.cca")
+        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30, reduction = "integrated.cca", check_duplicates = FALSE)
         
         dir.create("CloupeFiles", showWarnings = FALSE)
         
