@@ -304,7 +304,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         create_loupe_from_seurat(
           Seurat_Object,
           output_dir = "CloupeFiles",
-          output_name = "TEST_MITO",
+          output_name = paste0(prefixNames,".",File_Format,
           dedup_clusters = FALSE,
           executable_path = NULL,
           force = TRUE)
