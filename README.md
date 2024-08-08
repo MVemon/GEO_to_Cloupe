@@ -20,6 +20,23 @@ remotes::install_github("10xGenomics/loupeR")
 install_github("MVemon/GEO_to_Cloupe")
 ```
 
+# Package Version
+
+Confirmed to work on R 4.3.2 and R 4.4.1 on both Windows and Mac.
+
+GEOquery (>= 2.68.0)
+
+stringr (>= 1.5.1)
+
+Seurat (>= 5.0.0)
+
+loupeR (>= 1.0.0)
+
+hdf5r (>= 1.3.8)
+
+devtools (>= 2.4.5)
+
+BiocManager (>= 1.30.22)
 
 
 # Usage
