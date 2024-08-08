@@ -20,6 +20,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
   library(Seurat)
   library(loupeR)
   
+  options(timeout = max(300, getOption("timeout")))
+  
   #parallel = FALSE, parallel_workers = 4, maxSize = 850
   
   # if (parallel){
@@ -28,7 +30,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
   #   
   #   plan("multicore", workers = parallel_workers)
   #   
-  #   options(timeout = max(300, getOption("timeout")))
+  #   
   #   
   #   options(future.globals.maxSize= maxSize*1024^2)
   #   
@@ -41,6 +43,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
   
   
   for(GEO_ID in GEO_ID_List){
+    
+    print(paste("Processing ",GEO_ID))
     
     Empty_samples <- TRUE
     
@@ -240,8 +244,13 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       # }
       # 
       
+      if (length(Seurat_Object) == 2){
+        Seurat_Object <- Seurat_Object[["Gene Expression"]]
+      }
+      
       Seurat_Object <- CreateSeuratObject(counts = Seurat_Object, project = GEO_ID, min.features = 50)
       
+       
       
       for(i in 1: length(metaNames_filtered)){
         
@@ -400,6 +409,12 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
 
   } else {
     
+    return(Seurat_separate_list)
+    
+  }
+  
+}
+
     return(Seurat_separate_list)
     
   }
