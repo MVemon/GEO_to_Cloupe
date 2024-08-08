@@ -414,9 +414,3 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
   }
   
 }
-
-    return(Seurat_separate_list)
-    
-  }
-  
-}
