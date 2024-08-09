@@ -13,7 +13,7 @@
 #' merged_Suerat <- GEO_to_Cloupe(c("GSE213338", "GSE162733"), Downloaded = TRUE, Merge = FALSE);
 #' @export
 
-GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.10, Merge = TRUE, Mitochondria = 30){
+GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.10, Merge = TRUE, Mitochondria = 30, Dims = 1:30){
   
   library(GEOquery)
   library(stringr)
@@ -35,7 +35,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
   #   options(future.globals.maxSize= maxSize*1024^2)
   #   
   # }
- 
+  
   
   Seurat_merged_list <- c()
   
@@ -52,10 +52,16 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
     
     GEO_accession_list <- c()
     
+    mouse_list <- c()
+    
+    human_list <- c()
+    
+    mixed_organism_dataset <- FALSE
+    
     checkSamplesList <- getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname
     
     for (suppFile in checkSamplesList){
-
+      
       if(grepl("GSE", suppFile) && grepl(".tar", suppFile)){
         
         Empty_samples = FALSE
@@ -97,16 +103,29 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
     } else if (organism == "Mus musculus"){
       mitochondria <- "^mt-"
     }
-
+    
     if (!Empty_samples){
       
       for(i in 1: length(gse)){
+        
+        organism_set <- gse[[i]]@phenoData@data[["organism_ch1"]][1]
+        
         for (n in 1: length(gse[[i]]@phenoData@data[["geo_accession"]])){
           
           print(paste0("Checking Samples ",n, "/", length(gse[[i]]@phenoData@data[["geo_accession"]])))
           
           if (grepl(File_Format,getGEOSuppFiles(gse[[i]]@phenoData@data[["geo_accession"]][n], fetch_files = FALSE)[1])){
+            
+            if(organism_set == "Homo sapiens"){
+              human_list <- append(human_list, gse[[i]]@phenoData@data[["geo_accession"]][n])
+            } else if (organism_set == "Mus musculus"){
+              mouse_list <- append(mouse_list, gse[[i]]@phenoData@data[["geo_accession"]][n])
+              
+            }
+            
             GEO_accession_list <- append(GEO_accession_list, gse[[i]]@phenoData@data[["geo_accession"]][n])
+            
+            
           }
           
         }
@@ -120,6 +139,19 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
     
     Seurat_list <- c()
     
+    Mouse_Seurat_list <- c()
+    
+    Human_Seurat_list <- c()
+    
+    
+    if(length(mouse_list) > 0 && length(human_list) > 0) {
+      
+      #genome_list <- list(mouse_list, human_list)
+      
+      mixed_organism_dataset = TRUE
+      
+    }
+    
     for(GEO_accession in GEO_accession_list){
       
       print(paste0("Accessing files from ",GEO_accession))
@@ -127,8 +159,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       if (Downloaded) {
         
         fileNames = paste0(GEO_accession, "/",getGEOSuppFiles(GEO_accession, fetch_files = FALSE)$fname)
-      
-        } else {
+        
+      } else {
         
         filePaths = getGEOSuppFiles(GEO_accession)
         
@@ -218,7 +250,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
             
             prefixNames <- str_split_i(h5_file_name, "filtered_feature", 1)
             prefixNames <- str_split_i(prefixNames, "/", -1)
-              
+            
           } else if (grepl(".h5", h5_name)){
             
             h5_file_name <-  h5_name
@@ -227,7 +259,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
             
             
           }
- 
+          
         }
         
         print(paste0("Creating Seurat Object for ", GEO_accession))
@@ -250,7 +282,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       
       Seurat_Object <- CreateSeuratObject(counts = Seurat_Object, project = GEO_ID, min.features = 50)
       
-       
+      
       
       for(i in 1: length(metaNames_filtered)){
         
@@ -260,7 +292,29 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       }
       
       #Seurat_list <- append(Seurat_list, assign(GEO_accession, Seurat_Object))
-      Seurat_list <- append(Seurat_list, Seurat_Object)
+      
+      if(mixed_organism_dataset){
+        for(mouse_GEO in mouse_list){
+          if(grepl(GEO_accession, mouse_GEO)){
+            Mouse_Seurat_list <- append(Mouse_Seurat_list, Seurat_Object)
+            
+          }
+        }
+        
+        for (human_GEO in human_list){
+          if(grepl(GEO_accession, human_GEO)){
+            Human_Seurat_list <- append(Human_Seurat_list, Seurat_Object)
+            
+          }
+        }
+        
+        
+      } else {
+        
+        Seurat_list <- append(Seurat_list, Seurat_Object)
+        
+      }
+      
       
       
       # if(!Empty_samples){
@@ -295,10 +349,10 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         Seurat_Object <- FindClusters(Seurat_Object, resolution = Resolution)
         
-        Seurat_Object <- RunUMAP(Seurat_Object, dims = 1:30)
-
-        Seurat_Object <- RunTSNE(Seurat_Object, dims = 1:30, check_duplicates = FALSE)
-
+        Seurat_Object <- RunUMAP(Seurat_Object, dims = Dims)
+        
+        Seurat_Object <- RunTSNE(Seurat_Object, dims = Dims, check_duplicates = FALSE)
+        
         
         Seurat_Object <- JoinLayers(Seurat_Object)
         
@@ -324,93 +378,242 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
     
     if (Merge){
       
-      print(paste0("Starting merging and processing of ", GEO_ID))
-      
-      Seurat_merged <- merge(Seurat_Object, y = Seurat_list[1:(length(Seurat_list)-1)], project = GEO_ID)
-      
-      Seurat_merged[["percent.mt"]] <- PercentageFeatureSet(Seurat_merged, pattern = mitochondria)
-      
-      Seurat_merged <- subset(Seurat_merged, subset = percent.mt < Mitochondria)
-      
-      Seurat_merged <- NormalizeData(Seurat_merged, normalization.method = "LogNormalize", scale.factor = 10000)
-      
-      Seurat_merged <- FindVariableFeatures(Seurat_merged, selection.method = "vst", nfeatures = 2000)
-      
-      all.genes <- rownames(Seurat_merged)
-      
-      Seurat_merged <- ScaleData(Seurat_merged, features = all.genes)
-      
-      Seurat_merged <- RunPCA(Seurat_merged, features = VariableFeatures(object = Seurat_merged))
-      
-      if (Integrate){
+      if (!mixed_organism_dataset){
         
-        print("Starting integration")
+        print(paste0("Starting merging and processing of ", GEO_ID))
         
-        Seurat_merged <- IntegrateLayers(object = Seurat_merged, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
+        Seurat_merged <- merge(Seurat_Object, y = Seurat_list[1:(length(Seurat_list)-1)], project = GEO_ID)
         
-        Seurat_merged[["RNA"]] <- JoinLayers(Seurat_merged[["RNA"]])
+        Seurat_merged[["percent.mt"]] <- PercentageFeatureSet(Seurat_merged, pattern = mitochondria)
         
-        Seurat_merged <- FindNeighbors(Seurat_merged, reduction = "integrated.cca", dims = 1:30)
+        Seurat_merged <- subset(Seurat_merged, subset = percent.mt < Mitochondria)
         
-        Seurat_merged <- FindClusters(Seurat_merged, resolution = Resolution)
+        Seurat_merged <- NormalizeData(Seurat_merged, normalization.method = "LogNormalize", scale.factor = 10000)
         
-        Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30, reduction = "integrated.cca")
-
-        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30, reduction = "integrated.cca", check_duplicates = FALSE)
+        Seurat_merged <- FindVariableFeatures(Seurat_merged, selection.method = "vst", nfeatures = 2000)
         
-        dir.create("CloupeFiles", showWarnings = FALSE)
+        all.genes <- rownames(Seurat_merged)
         
-        print(paste0("Creating loupe file for ", GEO_ID))
+        Seurat_merged <- ScaleData(Seurat_merged, features = all.genes)
         
-        create_loupe_from_seurat(
-          Seurat_merged,
-          output_dir = "CloupeFiles",
-          output_name = paste0(GEO_ID,".Integrated.",File_Format),
-          dedup_clusters = FALSE,
-          executable_path = NULL,
-          force = TRUE)
+        Seurat_merged <- RunPCA(Seurat_merged, features = VariableFeatures(object = Seurat_merged))
         
-      } else if (!Integrate){
+        if (Integrate){
+          
+          print("Starting integration")
+          
+          Seurat_merged <- IntegrateLayers(object = Seurat_merged, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
+          
+          Seurat_merged[["RNA"]] <- JoinLayers(Seurat_merged[["RNA"]])
+          
+          Seurat_merged <- FindNeighbors(Seurat_merged, reduction = "integrated.cca", dims = Dims)
+          
+          Seurat_merged <- FindClusters(Seurat_merged, resolution = Resolution)
+          
+          Seurat_merged <- RunUMAP(Seurat_merged, dims = Dims, reduction = "integrated.cca")
+          
+          Seurat_merged <- RunTSNE(Seurat_merged, dims = Dims, reduction = "integrated.cca", check_duplicates = FALSE)
+          
+          dir.create("CloupeFiles", showWarnings = FALSE)
+          
+          print(paste0("Creating loupe file for ", GEO_ID))
+          
+          create_loupe_from_seurat(
+            Seurat_merged,
+            output_dir = "CloupeFiles",
+            output_name = paste0(GEO_ID,".Integrated.",File_Format),
+            dedup_clusters = FALSE,
+            executable_path = NULL,
+            force = TRUE)
+          
+        } else if (!Integrate){
+          
+          Seurat_merged <- FindNeighbors(Seurat_merged, dims = Dims)
+          
+          Seurat_merged <- FindClusters(Seurat_merged, resolution = Resolution)
+          
+          Seurat_merged <- RunUMAP(Seurat_merged, dims = Dims)
+          
+          Seurat_merged <- RunTSNE(Seurat_merged, dims = Dims, check_duplicates = FALSE)
+          
+          Seurat_merged <- JoinLayers(Seurat_merged)
+          
+          dir.create("CloupeFiles", showWarnings = FALSE)
+          
+          print(paste0("Creating loupe file for ", GEO_ID))
+          
+          create_loupe_from_seurat(
+            Seurat_merged,
+            output_dir = "CloupeFiles",
+            output_name = paste0(GEO_ID,".",File_Format),
+            dedup_clusters = FALSE,
+            executable_path = NULL,
+            force = TRUE)
+          
+        }
         
-        Seurat_merged <- FindNeighbors(Seurat_merged, dims = 1:30)
+        # Seurat_merged_list <- append(Seurat_merged_list, assign(paste0(GEO_accession, "_merged"), Seurat_merged))
+        Seurat_merged_list <- append(Seurat_merged_list, Seurat_merged)
         
-        Seurat_merged <- FindClusters(Seurat_merged, resolution = Resolution)
+      } else if (mixed_organism_dataset){
         
-        Seurat_merged <- RunUMAP(Seurat_merged, dims = 1:30)
-
-        Seurat_merged <- RunTSNE(Seurat_merged, dims = 1:30, check_duplicates = FALSE)
+        print(paste0("Starting merging and processing of ", GEO_ID, " mouse data files"))
         
-        Seurat_merged <- JoinLayers(Seurat_merged)
+        last_Mouse_Seurat_object <- Mouse_Seurat_list[[length(Mouse_Seurat_list)]]
         
-        dir.create("CloupeFiles", showWarnings = FALSE)
+        Mouse_Seurat_merged <- merge(last_Mouse_Seurat_object, y = Mouse_Seurat_list[1:(length(Mouse_Seurat_list)-1)], project = GEO_ID)
         
-        print(paste0("Creating loupe file for ", GEO_ID))
+        Mouse_Seurat_merged[["percent.mt"]] <- PercentageFeatureSet(Mouse_Seurat_merged, pattern = "^mt-")
         
-        create_loupe_from_seurat(
-          Seurat_merged,
-          output_dir = "CloupeFiles",
-          output_name = paste0(GEO_ID,".",File_Format),
-          dedup_clusters = FALSE,
-          executable_path = NULL,
-          force = TRUE)
+        Mouse_Seurat_merged <- subset(Mouse_Seurat_merged, subset = percent.mt < Mitochondria)
+        
+        Mouse_Seurat_merged <- NormalizeData(Mouse_Seurat_merged, normalization.method = "LogNormalize", scale.factor = 10000)
+        
+        Mouse_Seurat_merged <- FindVariableFeatures(Mouse_Seurat_merged, selection.method = "vst", nfeatures = 2000)
+        
+        all.genes <- rownames(Mouse_Seurat_merged)
+        
+        Mouse_Seurat_merged <- ScaleData(Mouse_Seurat_merged, features = all.genes)
+        
+        Mouse_Seurat_merged <- RunPCA(Mouse_Seurat_merged, features = VariableFeatures(object = Mouse_Seurat_merged))
+        
+        last_Human_Seurat_object <- Human_Seurat_list[[length(Human_Seurat_list)]]
+        
+        Human_Seurat_merged <- merge(last_Human_Seurat_object, y = Human_Seurat_list[1:(length(Human_Seurat_list)-1)], project = GEO_ID)
+        
+        Human_Seurat_merged[["percent.mt"]] <- PercentageFeatureSet(Human_Seurat_merged, pattern = "^MT-")
+        
+        Human_Seurat_merged <- subset(Human_Seurat_merged, subset = percent.mt < Mitochondria)
+        
+        Human_Seurat_merged <- NormalizeData(Human_Seurat_merged, normalization.method = "LogNormalize", scale.factor = 10000)
+        
+        Human_Seurat_merged <- FindVariableFeatures(Human_Seurat_merged, selection.method = "vst", nfeatures = 2000)
+        
+        all.genes <- rownames(Human_Seurat_merged)
+        
+        Human_Seurat_merged <- ScaleData(Human_Seurat_merged, features = all.genes)
+        
+        Human_Seurat_merged <- RunPCA(Human_Seurat_merged, features = VariableFeatures(object = Human_Seurat_merged))
+        
+        if (Integrate){
+          
+          print("Starting integration")
+          
+          Mouse_Seurat_merged <- IntegrateLayers(object = Mouse_Seurat_merged, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
+          
+          Mouse_Seurat_merged[["RNA"]] <- JoinLayers(Mouse_Seurat_merged[["RNA"]])
+          
+          Mouse_Seurat_merged <- FindNeighbors(Mouse_Seurat_merged, reduction = "integrated.cca", dims = Dims)
+          
+          Mouse_Seurat_merged <- FindClusters(Mouse_Seurat_merged, resolution = Resolution)
+          
+          Mouse_Seurat_merged <- RunUMAP(Mouse_Seurat_merged, dims = Dims, reduction = "integrated.cca")
+          
+          Mouse_Seurat_merged <- RunTSNE(Mouse_Seurat_merged, dims = Dims, reduction = "integrated.cca", check_duplicates = FALSE)
+          
+          dir.create("CloupeFiles", showWarnings = FALSE)
+          
+          print(paste0("Creating loupe file for ", GEO_ID))
+          
+          create_loupe_from_seurat(
+            Mouse_Seurat_merged,
+            output_dir = "CloupeFiles",
+            output_name = paste0(GEO_ID,".Mouse.Integrated.",File_Format),
+            dedup_clusters = FALSE,
+            executable_path = NULL,
+            force = TRUE)
+          
+          Human_Seurat_merged <- IntegrateLayers(object = Human_Seurat_merged, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
+          
+          Human_Seurat_merged[["RNA"]] <- JoinLayers(Human_Seurat_merged[["RNA"]])
+          
+          Human_Seurat_merged <- FindNeighbors(Human_Seurat_merged, reduction = "integrated.cca", dims = Dims)
+          
+          Human_Seurat_merged <- FindClusters(Human_Seurat_merged, resolution = Resolution)
+          
+          Human_Seurat_merged <- RunUMAP(Human_Seurat_merged, dims = Dims, reduction = "integrated.cca")
+          
+          Human_Seurat_merged <- RunTSNE(Human_Seurat_merged, dims = Dims, reduction = "integrated.cca", check_duplicates = FALSE)
+          
+          dir.create("CloupeFiles", showWarnings = FALSE)
+          
+          print(paste0("Creating loupe file for ", GEO_ID))
+          
+          create_loupe_from_seurat(
+            Human_Seurat_merged,
+            output_dir = "CloupeFiles",
+            output_name = paste0(GEO_ID,".Human.Integrated.",File_Format),
+            dedup_clusters = FALSE,
+            executable_path = NULL,
+            force = TRUE)
+          
+        } else if (!Integrate){
+          
+          Mouse_Seurat_merged <- FindNeighbors(Mouse_Seurat_merged, dims = Dims)
+          
+          Mouse_Seurat_merged <- FindClusters(Mouse_Seurat_merged, resolution = Resolution)
+          
+          Mouse_Seurat_merged <- RunUMAP(Mouse_Seurat_merged, dims = Dims)
+          
+          Mouse_Seurat_merged <- RunTSNE(Mouse_Seurat_merged, dims = Dims, check_duplicates = FALSE)
+          
+          Mouse_Seurat_merged <- JoinLayers(Mouse_Seurat_merged)
+          
+          dir.create("CloupeFiles", showWarnings = FALSE)
+          
+          print(paste0("Creating loupe file for ", GEO_ID))
+          
+          create_loupe_from_seurat(
+            Mouse_Seurat_merged,
+            output_dir = "CloupeFiles",
+            output_name = paste0(GEO_ID,".mouse.",File_Format),
+            dedup_clusters = FALSE,
+            executable_path = NULL,
+            force = TRUE)
+          
+          Human_Seurat_merged <- FindNeighbors(Human_Seurat_merged, dims = Dims)
+          
+          Human_Seurat_merged <- FindClusters(Human_Seurat_merged, resolution = Resolution)
+          
+          Human_Seurat_merged <- RunUMAP(Human_Seurat_merged, dims = Dims)
+          
+          Human_Seurat_merged <- RunTSNE(Human_Seurat_merged, dims = Dims, check_duplicates = FALSE)
+          
+          Human_Seurat_merged <- JoinLayers(Human_Seurat_merged)
+          
+          dir.create("CloupeFiles", showWarnings = FALSE)
+          
+          print(paste0("Creating loupe file for ", GEO_ID))
+          
+          create_loupe_from_seurat(
+            Human_Seurat_merged,
+            output_dir = "CloupeFiles",
+            output_name = paste0(GEO_ID,".Human.",File_Format),
+            dedup_clusters = FALSE,
+            executable_path = NULL,
+            force = TRUE)
+          
+        }
+        
+        Seurat_merged_list <- append(Seurat_merged_list, Mouse_Seurat_merged)
+        
+        Seurat_merged_list <- append(Seurat_merged_list, Human_Seurat_merged)
+        
+        
         
       }
       
-      # Seurat_merged_list <- append(Seurat_merged_list, assign(paste0(GEO_accession, "_merged"), Seurat_merged))
-      Seurat_merged_list <- append(Seurat_merged_list, Seurat_merged)
+    }
+    
+    if(Merge){
+      
+      return(Seurat_merged_list)
+      
+    } else {
+      
+      return(Seurat_separate_list)
       
     }
     
   }
-  
-  if(Merge){
-    
-    return(Seurat_merged_list)
-
-  } else {
-    
-    return(Seurat_separate_list)
-    
-  }
-  
-}
+}  
