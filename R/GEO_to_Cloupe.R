@@ -7,6 +7,7 @@
 #' @param Resolution Set the value for UMAP clustering sensitivity from a value of 0.0 to 1.0 from less to more clusters
 #' @param Merge A TRUE or FALSE that dictates whether you want to merge the multiple scRNA data 
 #' @param Mitochondria Set threshold for mitochondria QC metrics. Values set between 0 to 100.
+#' @param Dims Set dims values for clustering.
 #' @return Returns a merged Seurat object of all the different scRNA datasets downloaded, while also exporting cloupe files into the directory "CloupeFiles"
 #' @examples 
 #' merged_Seurat <- GEO_to_Cloupe(c("GSE213338"));
@@ -70,31 +71,35 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       
     }
     
-    if (!Empty_samples){
-      
-      file_type_check = getGEOSuppFiles(gse[[1]]@phenoData@data[["geo_accession"]][1], fetch_files = FALSE)$fname
-      
-      for(z in file_type_check){
-        if(grepl("mtx.gz", z)){
-          File_Format = "mtx.gz"
-        } else if (grepl(".h5", z)){
-          File_Format = "h5"
-        }
-      }
-      
-      
-    } else if (Empty_samples){
-      file_type_check = getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname
-      
-      for(z in file_type_check){
-        if(grepl("mtx.gz", z)){
-          File_Format = "mtx.gz"
-        } else if (grepl(".h5", z)){
-          File_Format = "h5"
-        }
-      }
-      
-    }
+    # if (!Empty_samples){
+    #   
+    #   file_type_check = getGEOSuppFiles(gse[[1]]@phenoData@data[["geo_accession"]][1], fetch_files = FALSE)$fname
+    #   
+    #   for(z in file_type_check){
+    #     if(grepl("mtx.gz", z)){
+    #       File_Format = "mtx.gz"
+    #     } else if (grepl(".h5", z)){
+    #       File_Format = "h5"
+    #     } else {
+    #       File_Format = "ignore"
+    #     }
+    #   }
+    #   
+    #   
+    # } else if (Empty_samples){
+    #   file_type_check = getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname
+    #   
+    #   for(z in file_type_check){
+    #     if(grepl("mtx.gz", z)){
+    #       File_Format = "mtx.gz"
+    #     } else if (grepl(".h5", z)){
+    #       File_Format = "h5"
+    #     } else {
+    #       File_Format = "ignore"
+    #     }
+    #   }
+    #   
+    # }
     
     organism <- gse[[1]]@phenoData@data[["organism_ch1"]][1]
     
@@ -111,6 +116,18 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         organism_set <- gse[[i]]@phenoData@data[["organism_ch1"]][1]
         
         for (n in 1: length(gse[[i]]@phenoData@data[["geo_accession"]])){
+          
+          file_type_check = getGEOSuppFiles(gse[[i]]@phenoData@data[["geo_accession"]][n], fetch_files = FALSE)$fname
+          
+          for(z in file_type_check){
+            if(grepl("mtx.gz", z)){
+              File_Format = "mtx.gz"
+            } else if (grepl(".h5", z)){
+              File_Format = "h5"
+            } else {
+              File_Format = "ignore"
+            }
+          }
           
           print(paste0("Checking Samples ",n, "/", length(gse[[i]]@phenoData@data[["geo_accession"]])))
           
@@ -132,6 +149,18 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       }
       
     } else if (Empty_samples){
+      
+      file_type_check = getGEOSuppFiles(GEO_ID, fetch_files = FALSE)$fname
+      
+      for(z in file_type_check){
+        if(grepl("mtx.gz", z)){
+          File_Format = "mtx.gz"
+        } else if (grepl(".h5", z)){
+          File_Format = "h5"
+        } else {
+          File_Format = "ignore"
+        }
+      }
       
       GEO_accession_list <- append(GEO_accession_list, GEO_ID)
       
@@ -179,6 +208,18 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       
       metaNames_filtered <- metaNames[0:(length(metaNames)-1)]
       
+      file_type_check = getGEOSuppFiles(GEO_accession, fetch_files = FALSE)$fname
+
+        for(z in file_type_check){
+          if(grepl("mtx.gz", z)){
+            File_Format = "mtx.gz"
+          } else if (grepl(".h5", z)){
+            File_Format = "h5"
+          } else {
+            File_Format = "ignore"
+          }
+        }
+      
       if (File_Format == "mtx.gz"){
         
         for(mtx_name in fixedNames){
@@ -225,13 +266,27 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         print(paste0("Creating Seurat Object for ", GEO_accession))
         
-        Seurat_Object <- Read10X(
-          GEO_accession,
-          gene.column = 2,
-          cell.column = 1,
-          unique.features = TRUE,
-          strip.suffix = FALSE
-        )
+        df<-read.delim(paste0(GEO_accession, "/features.tsv.gz"),sep="\t")
+        
+        if (ncol(df) > 1){
+          Seurat_Object <- Read10X(
+            GEO_accession,
+            gene.column = 2,
+            cell.column = 1,
+            unique.features = TRUE,
+            strip.suffix = FALSE
+          )
+        } else if  (ncol(df ) == 1){
+          Seurat_Object <- Read10X(
+            GEO_accession,
+            gene.column = 1,
+            cell.column = 1,
+            unique.features = TRUE,
+            strip.suffix = FALSE
+          )
+        }
+        
+        
         
       } else if ((File_Format == "h5")){
         
@@ -345,7 +400,7 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         Seurat_Object <- RunPCA(Seurat_Object, features = VariableFeatures(object = Seurat_Object))
         
-        Seurat_Object <- FindNeighbors(Seurat_Object, dims = 1:30)
+        Seurat_Object <- FindNeighbors(Seurat_Object, dims = Dims)
         
         Seurat_Object <- FindClusters(Seurat_Object, resolution = Resolution)
         
@@ -605,15 +660,16 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
       
     }
     
-    if(Merge){
-      
-      return(Seurat_merged_list)
-      
-    } else {
-      
-      return(Seurat_separate_list)
-      
-    }
+  }
+  
+  if(Merge){
+    
+    return(Seurat_merged_list)
+    
+  } else {
+    
+    return(Seurat_separate_list)
     
   }
+  
 }  
