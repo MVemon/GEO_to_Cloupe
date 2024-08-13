@@ -7,14 +7,13 @@
 #' @param Resolution Set the value for UMAP clustering sensitivity from a value of 0.0 to 1.0 from less to more clusters
 #' @param Merge A TRUE or FALSE that dictates whether you want to merge the multiple scRNA data 
 #' @param Mitochondria Set threshold for mitochondria QC metrics. Values set between 0 to 100.
-#' @param Dims Set dims values for clustering.
 #' @return Returns a merged Seurat object of all the different scRNA datasets downloaded, while also exporting cloupe files into the directory "CloupeFiles"
 #' @examples 
 #' merged_Seurat <- GEO_to_Cloupe(c("GSE213338"));
 #' merged_Suerat <- GEO_to_Cloupe(c("GSE213338", "GSE162733"), Downloaded = TRUE, Merge = FALSE);
 #' @export
 
-GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.10, Merge = TRUE, Mitochondria = 30, Dims = 1:30){
+GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Resolution = 0.10, Merge = TRUE, Mitochondria = 30, Dims = 1:30, MetaData = NULL){
   
   library(GEOquery)
   library(stringr)
@@ -124,6 +123,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
               File_Format = "mtx.gz"
             } else if (grepl(".h5", z)){
               File_Format = "h5"
+            } else if (grepl("txt.gz", z)){
+              File_Format = "txt.gz"
             } else {
               File_Format = "ignore"
             }
@@ -157,6 +158,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
           File_Format = "mtx.gz"
         } else if (grepl(".h5", z)){
           File_Format = "h5"
+        } else if (grepl("txt.gz", z)){
+          File_Format = "txt.gz"
         } else {
           File_Format = "ignore"
         }
@@ -215,6 +218,8 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
             File_Format = "mtx.gz"
           } else if (grepl(".h5", z)){
             File_Format = "h5"
+          } else if (grepl("txt.gz", z)){
+            File_Format = "txt.gz"
           } else {
             File_Format = "ignore"
           }
@@ -321,6 +326,52 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         Seurat_Object <- Read10X_h5(h5_file_name, use.names = TRUE)
         
+      } else if (File_Format == "txt.gz"){
+        for(txt_name in fileNames){
+          
+          if (length(fileNames) == 1){
+            
+            txt_file_name <-  txt_name
+            
+            prefixNames <- str_split_i(txt_file_name, ".txt.gz", 1)
+            prefixNames <- str_split_i(prefixNames, "/", -1)
+            
+            
+          } else if (grepl("Counts", txt_name)){
+            
+            
+            txt_file_name <-  txt_name
+            
+            prefixNames <- str_split_i(txt_file_name, "Counts", 1)
+            prefixNames <- str_split_i(prefixNames, "/", -1)
+            
+            break
+            
+          } else if (grepl("counts", txt_name)){
+            
+            txt_file_name <-  txt_name
+            
+            prefixNames <- str_split_i(txt_file_name, "counts", 1)
+            prefixNames <- str_split_i(prefixNames, "/", -1)
+            
+          } else if (grepl(".txt", txt_name)){
+            
+
+            txt_file_name <-  txt_name
+            
+            prefixNames <- str_split_i(txt_file_name, ".txt", -1)
+            
+            
+          }
+          
+        }
+        
+        print(paste0("Creating Seurat Object for ", GEO_accession))
+        
+        
+        Seurat_Object <- read.delim(txt_file_name, header = T, stringsAsFactors = F, row.names = 1)
+        
+
       }
       
       # else if ((File_Format == "csv")){
@@ -343,6 +394,17 @@ GEO_to_Cloupe <- function(GEO_ID_List, Downloaded = FALSE, Integrate = FALSE, Re
         
         colName = paste("variable",i)
         Seurat_Object <- AddMetaData(Seurat_Object, metaNames_filtered[i], col.name = colName)
+        
+        
+      }
+      
+      if (!(is.null(MetaData))){
+        
+        print(paste0("Adding metadata to Seurat object from ", MetaData))
+        
+        metadata <- read.delim(paste0(GEO_accession,"/",MetaData), header = T, stringsAsFactors = F, row.names = 1)
+        
+        Seurat_Object <- AddMetaData(Seurat_Object, metadata)
         
       }
       
