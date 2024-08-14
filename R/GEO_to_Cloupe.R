@@ -7,6 +7,7 @@
 #' @param Resolution Set the value for UMAP clustering sensitivity from a value of 0.0 to 1.0 from less to more clusters
 #' @param Merge A TRUE or FALSE that dictates whether you want to merge the multiple scRNA data 
 #' @param Mitochondria Set threshold for mitochondria QC metrics. Values set between 0 to 100.
+#' @param Dims Sets the dims values during clustering and Seurat processing
 #' @param MetaData Set file name containing metadata information.
 #' @return Returns a merged Seurat object of all the different scRNA datasets downloaded, while also exporting cloupe files into the directory "CloupeFiles"
 #' @examples 
