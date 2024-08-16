@@ -1,5 +1,7 @@
 # GEO_to_Cloupe
 
+An R package that can automatically download scRNA-seq datasets from a GEO database and process the files into a cloupe format, which can be opened up with the 10X Loupe Browser. Will work only with 10X experiments and appropriate barcodes, with the file format of MTX, H5, TSV, CSV, and TXT. For merging 3 samples, it can take approximately 15-20 minutes to run.
+
 # Installation
 
 Downloading directly through github
@@ -19,6 +21,15 @@ remotes::install_github("10xGenomics/loupeR")
 
 install_github("MVemon/GEO_to_Cloupe")
 ```
+
+# Update Package
+
+```
+library(devtools)
+
+install_github("MVemon/GEO_to_Cloupe")
+```
+
 
 # Package Version
 
@@ -51,7 +62,8 @@ Seurat_lists <- GEO_to_Cloupe("GSE210187")
 
 `GEO_to_Cloupe()` function is used to directly download scRNA files from GEO databases and automatically converts them into cloupe files, which can be read through the 10X loupe browser. Can convert MTX and H5 files.
 
-General pipeline involves converting the MTX and H5 scRNA files into Seurat object, followed by normalization and clustering, then lastly converted into a cloupe.
+General pipeline involves converting the MTX, H5, CSV, TXT, and TSV scRNA files into Seurat object, followed by normalization and clustering, then lastly converted into a cloupe file. The cloupe file will automatically contain some metadata based on the file names (GEO sample ID names, conditions, etc.), a UMAP & t-SNE projections, and clusterings.
+.
 
 **Inputs/Parameters**
 
